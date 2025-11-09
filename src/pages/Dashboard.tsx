@@ -2,9 +2,34 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle, TrendingUp, DollarSign, MapPin, FileText } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { riskZones, insuranceClaims, parametricTriggers } from "@/data/mockData";
+import { insuranceClaims } from "@/data/mockData";
+import { useRiskZones, useParametricTriggers } from "@/hooks/useRealTimeData";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
+  const { riskZones, loading: loadingRisk } = useRiskZones();
+  const { triggers: parametricTriggers, loading: loadingTriggers } = useParametricTriggers();
+  
+  const loading = loadingRisk || loadingTriggers;
+  
+  if (loading) {
+    return (
+      <div className="space-y-6 pb-20 md:pb-8">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-80" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const approvedClaims = insuranceClaims.filter(c => c.claim_status === "Approved").length;
   const pendingClaims = insuranceClaims.filter(c => c.claim_status === "Pending" || c.claim_status === "Under Review").length;
   const totalClaimAmount = insuranceClaims.reduce((sum, c) => sum + c.claim_amount_usd, 0);
@@ -26,6 +51,24 @@ export default function Dashboard() {
     }
     return acc;
   }, [] as { type: string; count: number; amount: number }[]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 pb-20 md:pb-8">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-80" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">

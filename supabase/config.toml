@@ -1,1 +1,10 @@
 project_id = "rfvngxdgeksyddasniyi"
+
+[functions.fetch-risk-data]
+verify_jwt = false
+
+[functions.fetch-weather-triggers]
+verify_jwt = false
+
+[functions.analyze-damage]
+verify_jwt = false

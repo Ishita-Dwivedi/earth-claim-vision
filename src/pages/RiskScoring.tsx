@@ -3,11 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, AlertTriangle, Flame, Droplets, Wind, Thermometer } from "lucide-react";
-import { riskZones } from "@/data/mockData";
+import { Search, AlertTriangle, Flame, Droplets, Wind, Thermometer, Loader2 } from "lucide-react";
+import { useRiskZones } from "@/hooks/useRealTimeData";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RiskScoring() {
+  const { riskZones, loading } = useRiskZones();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(riskZones[0]);
 
@@ -27,6 +29,22 @@ export default function RiskScoring() {
     { factor: "Storm", value: selectedLocation.storm_risk * 100 },
     { factor: "Vegetation", value: selectedLocation.vegetation_dryness * 100 },
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6 pb-20 md:pb-8">
+        <div>
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <Skeleton className="h-48" />
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">

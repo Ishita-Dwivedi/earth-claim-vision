@@ -4,14 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, FileText, CheckCircle, XCircle, Clock, DollarSign } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Clock, DollarSign, Loader2 } from "lucide-react";
 import { insuranceClaims } from "@/data/mockData";
 import { toast } from "sonner";
+import { analyzeDamage } from "@/hooks/useRealTimeData";
 
 export default function Claims() {
   const [selectedClaim, setSelectedClaim] = useState(insuranceClaims[0]);
   const [preImage, setPreImage] = useState<File | null>(null);
   const [postImage, setPostImage] = useState<File | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [newClaimData, setNewClaimData] = useState({
+    location: "",
+    latitude: 25.7617,
+    longitude: -80.1918,
+    disasterType: "",
+  });
 
   const handleImageUpload = (type: 'pre' | 'post') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -21,10 +29,42 @@ export default function Claims() {
     }
   };
 
-  const handleAnalyze = () => {
-    toast.success("Damage analysis complete!", {
-      description: `Detected ${(Math.random() * 0.5 + 0.4).toFixed(2)} damage score. Processing claim...`
-    });
+  const handleAnalyze = async () => {
+    if (!preImage || !postImage) {
+      toast.error("Please upload both pre and post-disaster images");
+      return;
+    }
+
+    if (!newClaimData.location || !newClaimData.disasterType) {
+      toast.error("Please select location and disaster type");
+      return;
+    }
+
+    setAnalyzing(true);
+    toast.info("Analyzing damage using AI...");
+
+    try {
+      const result = await analyzeDamage({
+        location_name: newClaimData.location,
+        disaster_type: newClaimData.disasterType,
+        latitude: newClaimData.latitude,
+        longitude: newClaimData.longitude,
+      });
+
+      const damagePercent = Math.round(result.damage_score * 100);
+      const message = result.auto_approved
+        ? `✅ Damage analysis complete! Estimated damage: ${damagePercent}% - Claim auto-approved for $${result.claim_amount_usd.toLocaleString()}`
+        : `⚠️ Damage analysis complete! Estimated damage: ${damagePercent}% - Claim status: ${result.claim_status}`;
+
+      toast.success(message, {
+        description: `Confidence: ${result.analysis.confidence}% | Weather conditions analyzed`
+      });
+    } catch (error) {
+      toast.error("Failed to analyze damage. Please try again.");
+      console.error("Error analyzing damage:", error);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -131,6 +171,63 @@ export default function Claims() {
 
           <div className="border-t pt-6">
             <h4 className="font-semibold mb-4">Upload New Claim Images</h4>
+            
+            <div className="grid gap-4 md:grid-cols-2 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Location</label>
+                <Select
+                  value={newClaimData.location}
+                  onValueChange={(value) => {
+                    const locations: Record<string, { lat: number; lon: number }> = {
+                      "Miami, FL": { lat: 25.7617, lon: -80.1918 },
+                      "Los Angeles, CA": { lat: 34.0522, lon: -118.2437 },
+                      "Houston, TX": { lat: 29.7604, lon: -95.3698 },
+                      "New York, NY": { lat: 40.7128, lon: -74.006 },
+                      "Denver, CO": { lat: 39.7392, lon: -104.9903 },
+                      "San Francisco, CA": { lat: 37.7749, lon: -122.4194 },
+                    };
+                    setNewClaimData({
+                      ...newClaimData,
+                      location: value,
+                      latitude: locations[value]?.lat || 0,
+                      longitude: locations[value]?.lon || 0,
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Miami, FL">Miami, FL</SelectItem>
+                    <SelectItem value="Los Angeles, CA">Los Angeles, CA</SelectItem>
+                    <SelectItem value="Houston, TX">Houston, TX</SelectItem>
+                    <SelectItem value="New York, NY">New York, NY</SelectItem>
+                    <SelectItem value="Denver, CO">Denver, CO</SelectItem>
+                    <SelectItem value="San Francisco, CA">San Francisco, CA</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Disaster Type</label>
+                <Select
+                  value={newClaimData.disasterType}
+                  onValueChange={(value) => setNewClaimData({ ...newClaimData, disasterType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select disaster type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Flood">Flood</SelectItem>
+                    <SelectItem value="Wildfire">Wildfire</SelectItem>
+                    <SelectItem value="Storm">Storm</SelectItem>
+                    <SelectItem value="Hurricane">Hurricane</SelectItem>
+                    <SelectItem value="Earthquake">Earthquake</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium mb-2">Pre-Disaster Image</label>
@@ -172,10 +269,19 @@ export default function Claims() {
             <Button 
               className="w-full mt-4" 
               onClick={handleAnalyze}
-              disabled={!preImage || !postImage}
+              disabled={!preImage || !postImage || analyzing}
             >
-              <FileText className="h-4 w-4 mr-2" />
-              Analyze Damage with AI
+              {analyzing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Analyzing Damage...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Analyze Damage with AI
+                </>
+              )}
             </Button>
           </div>
         </Card>

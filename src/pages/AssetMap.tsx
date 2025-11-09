@@ -1,10 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Building, Home, Sprout, AlertTriangle } from "lucide-react";
-import { riskZones, assetsInsured } from "@/data/mockData";
+import { assetsInsured } from "@/data/mockData";
+import { useRiskZones } from "@/hooks/useRealTimeData";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 
 export default function AssetMap() {
+  const { riskZones, loading } = useRiskZones();
   const [selectedAsset, setSelectedAsset] = useState(assetsInsured[0]);
 
   const getAssetIcon = (type: string) => {
@@ -17,6 +20,23 @@ export default function AssetMap() {
     const zone = riskZones.find(z => z.location_name === locationName);
     return zone?.risk_score || 0;
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 pb-20 md:pb-8">
+        <div>
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">

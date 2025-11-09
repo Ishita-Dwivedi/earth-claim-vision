@@ -1,10 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle, Wind, Droplets, Activity, CloudRain } from "lucide-react";
-import { parametricTriggers } from "@/data/mockData";
+import { useParametricTriggers } from "@/hooks/useRealTimeData";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Triggers() {
+  const { triggers: parametricTriggers, loading } = useParametricTriggers();
+
   const getIcon = (parameter: string) => {
     if (parameter.includes("Wind")) return Wind;
     if (parameter.includes("Rain")) return Droplets;
@@ -15,6 +18,26 @@ export default function Triggers() {
   const getProgressValue = (current: number, threshold: number) => {
     return Math.min((current / threshold) * 100, 100);
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 pb-20 md:pb-8">
+        <div>
+          <Skeleton className="h-10 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+        <div className="grid gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-48" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-20 md:pb-8">
