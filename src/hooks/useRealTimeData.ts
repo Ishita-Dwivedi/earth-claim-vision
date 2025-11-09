@@ -120,6 +120,41 @@ export function useParametricTriggers() {
   return { triggers, loading, error };
 }
 
+export async function fetchRiskForLocation(locationName: string): Promise<RiskZone | null> {
+  try {
+    // First, geocode the location name to get coordinates
+    const geocodeResponse = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}&format=json&limit=1`
+    );
+    const geocodeData = await geocodeResponse.json();
+    
+    if (!geocodeData || geocodeData.length === 0) {
+      throw new Error('Location not found');
+    }
+
+    const { lat, lon, display_name } = geocodeData[0];
+    
+    // Fetch risk data for the coordinates
+    const { data, error } = await supabase.functions.invoke('fetch-risk-data', {
+      body: {
+        latitude: parseFloat(lat),
+        longitude: parseFloat(lon),
+        location_name: display_name
+      }
+    });
+
+    if (error) throw error;
+    
+    return {
+      ...data,
+      id: `${lat}-${lon}`,
+    };
+  } catch (err) {
+    console.error('Error fetching risk data:', err);
+    throw err;
+  }
+}
+
 export async function analyzeDamage(params: {
   location_name: string;
   disaster_type: string;
