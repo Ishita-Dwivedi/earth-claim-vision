@@ -11,7 +11,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function RiskScoring() {
   const { riskZones, loading } = useRiskZones();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState(riskZones[0]);
+  const [selectedLocation, setSelectedLocation] = useState<typeof riskZones[0] | null>(null);
+
+  // Set initial selected location when data loads
+  if (!selectedLocation && riskZones.length > 0) {
+    setSelectedLocation(riskZones[0]);
+  }
 
   const filteredLocations = riskZones.filter(location =>
     location.location_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -23,12 +28,12 @@ export default function RiskScoring() {
     return { label: "Low Risk", color: "default" as const };
   };
 
-  const radarData = [
+  const radarData = selectedLocation ? [
     { factor: "Flood", value: selectedLocation.flood_risk * 100 },
     { factor: "Wildfire", value: selectedLocation.wildfire_risk * 100 },
     { factor: "Storm", value: selectedLocation.storm_risk * 100 },
     { factor: "Vegetation", value: selectedLocation.vegetation_dryness * 100 },
-  ];
+  ] : [];
 
   if (loading) {
     return (
@@ -76,14 +81,14 @@ export default function RiskScoring() {
               key={location.id}
               onClick={() => setSelectedLocation(location)}
               className={`p-3 rounded-lg text-left transition-all ${
-                selectedLocation.id === location.id
+                selectedLocation?.id === location.id
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted hover:bg-muted/80"
               }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium">{location.location_name}</span>
-                <Badge variant={selectedLocation.id === location.id ? "secondary" : "outline"}>
+                <Badge variant={selectedLocation?.id === location.id ? "secondary" : "outline"}>
                   Score: {location.risk_score}
                 </Badge>
               </div>
